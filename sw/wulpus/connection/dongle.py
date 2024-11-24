@@ -20,9 +20,8 @@ from serial.tools.list_ports import comports
 from serial.tools.list_ports_common import ListPortInfo
 import numpy as np
 
-ACQ_LENGTH_SAMPLES = 400
 
-class WulpusDongle():
+class WulpusDongle:
     """
     Class representing the Wulpus dongle.
     """
@@ -56,8 +55,6 @@ class WulpusDongle():
         self.__ser__.dsrdtr = False                 # disable hardware (DSR/DTR) flow control
         self.__ser__.writeTimeout = timeout_write   # timeout for write
 
-        self.acq_length = ACQ_LENGTH_SAMPLES
-
 
     def get_available(self):
         """
@@ -65,6 +62,9 @@ class WulpusDongle():
         """
 
         ports = comports()
+
+        # Filter out devices where the product is None
+        ports = [port for port in ports if port.product is not None]
 
         return sorted(ports)
 

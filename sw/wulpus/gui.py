@@ -15,6 +15,8 @@
    SPDX-License-Identifier: Apache-2.0
 """
 
+from concurrent.futures import thread
+import threading
 from scipy import signal as ss
 from scipy.signal import hilbert
 import ipywidgets as widgets
@@ -24,7 +26,11 @@ import time
 from threading import Thread
 import os.path
 
-from wulpus.dongle import WulpusDongle
+from wulpus.connection.connection import WulpusConnection
+
+import nest_asyncio
+nest_asyncio.apply()
+
 
 # plt.ioff()
 
@@ -43,7 +49,7 @@ box_layout = widgets.Layout(display='flex',
 
 class WulpusGuiSingleCh(widgets.VBox):
      
-    def __init__(self, com_link:WulpusDongle, uss_conf, max_vis_fps = 20):
+    def __init__(self, com_link:WulpusConnection, uss_conf, max_vis_fps = 20):
         super().__init__()
         
         # Communication link
@@ -82,22 +88,16 @@ class WulpusGuiSingleCh(widgets.VBox):
         
         self.port_opened = False
         self.acquisition_running = False
-        
-        devices = self.com_link.get_available()
 
-        if len(devices) == 0:
-            self.ports_dd = widgets.Dropdown(options=['No ports found'],
-                                             value='No ports found',
-                                             description='Serial port:',
-                                             disabled=True,
-                                             style= {'description_width': 'initial'})
-        else:
-            self.ports_dd = widgets.Dropdown(options=[device.description for device in devices],
-                                             value=devices[0].description,
-                                             description='Serial port:',
-                                             disabled=True,
-                                             style= {'description_width': 'initial'})
-            self.click_scan_ports(self.ser_scan_button)
+        self.ports_dd = widgets.Dropdown(options=['Scanning...'],
+                                            value='Scanning...',
+                                            description='Serial port:',
+                                            disabled=True,
+                                            style= {'description_width': 'initial'})
+        
+        # Scan for ports asynchonously
+        scan_thread = Thread(target=self.click_scan_ports, args=(self.ser_scan_button,))
+        scan_thread.start()
 
         # Visualization-related
         self.raw_data_check = widgets.Checkbox(value=True,
@@ -267,6 +267,10 @@ class WulpusGuiSingleCh(widgets.VBox):
     
     def click_scan_ports(self, b):
         # Update drop-down for ports and make it enabled
+
+        b.disabled = True
+        b.description = "Scanning..."
+
         self.found_devices = self.com_link.get_available()
 
         if len(self.found_devices) == 0:
@@ -275,18 +279,35 @@ class WulpusGuiSingleCh(widgets.VBox):
             self.ports_dd.disabled = True
             self.ser_open_button.disabled = True
         else:
-            self.ports_dd.options = [device.description for device in self.found_devices]
-            self.ports_dd.value = self.found_devices[0].description
+            if self.com_link.type == 'dongle':
+                self.ports_dd.options = [f'{device.description} ({device.name})' for device in self.found_devices]
+                self.ports_dd.value = self.ports_dd.options[0]
+            elif self.com_link.type == 'direct':
+                # self.ports_dd.options = [device.details['props'].get('Name') for device in self.found_devices]
+                self.ports_dd.options = [device.name for device in self.found_devices]
+                self.ports_dd.value = self.ports_dd.options[0]
+            else:
+                self.ports_dd.options = [f'Invalid connection type: {self.com_link.type}']
+                self.ports_dd.value = self.ports_dd.options[0]
             self.ports_dd.disabled = False
             self.ser_open_button.disabled = False
+
+        b.description = "Scan ports"
+        b.disabled = False
         
     def click_open_port(self, b):
+
+        b.disabled = True
         
         if not self.port_opened and len(self.ports_dd.options) > 0:
+
+            b.description = "Opening port..."
+
             device = self.found_devices[self.ports_dd.index]
             
             if not self.com_link.open(device):
                 b.description = "Open port"
+                b.disabled = False
                 self.port_opened = False
                 self.start_stop_button.disabled = True
                 return
@@ -296,10 +317,15 @@ class WulpusGuiSingleCh(widgets.VBox):
             self.start_stop_button.disabled = False
             
         else :
+
+            b.description = "Closing port..."
+
             self.com_link.close()
             b.description = "Open port"
             self.port_opened = False
             self.start_stop_button.disabled = True
+
+        b.disabled = False
         
     
     def turn_on_off_raw_data_plot(self, change):
@@ -400,14 +426,26 @@ class WulpusGuiSingleCh(widgets.VBox):
         self.data_cnt=0
         
         # Send a restart command (if system is already running)
-        self.com_link.send_config(self.uss_conf.get_restart_package())
+        if not self.com_link.send_config(self.uss_conf.get_restart_package()):
+            print('Error sending restart command')
+            self.save_data_label.value = 'Error sending restart command'
+            self.acquisition_running = False
+            if self.ser_open_button.disabled:
+                self.click_start_stop_acq(self.start_stop_button)
+            return
         
         # Wait 2.5 seconds (much larger than max measurement period = 2s)
         time.sleep(2.5)
         
         # Generate and send a configuration package
         try:
-            self.com_link.send_config(self.uss_conf.get_conf_package())
+            if not self.com_link.send_config(self.uss_conf.get_conf_package()):
+                print('Error sending configuration package')
+                self.save_data_label.value = 'Error sending configuration package'
+                self.acquisition_running = False
+                if self.ser_open_button.disabled:
+                    self.click_start_stop_acq(self.start_stop_button)
+                return
         except ValueError as e:
             self.save_data_label.value = str(e)
             self.acquisition_running = False
@@ -534,7 +572,7 @@ class WulpusGuiSingleCh(widgets.VBox):
         self.filt_b = ss.remez(n_taps, 
                                temp,
                                [0, 1,  0], 
-                               Hz=f_sampling, 
+                               fs=f_sampling, 
                                maxiter=2500)
         self.filt_a = 1
         

@@ -14,14 +14,15 @@
    SPDX-License-Identifier: Apache-2.0
 """
 
-from wulpus.uss_conf import *
+import wulpus.config_package as cfg
+from wulpus.uss_conf.gen import WulpusUSSConfigGen
 import ipywidgets as widgets
 import json
 
 DEFAULT_FILENAME = 'uss_config'
 
 
-class WulpusUssConfigGUI(widgets.VBox, WulpusUssConfig):
+class WulpusUSSConfigGUI(widgets.VBox, WulpusUSSConfigGen):
     """
     A GUI for managing the USS configuration parameters of Wulpus.
 
@@ -31,7 +32,7 @@ class WulpusUssConfigGUI(widgets.VBox, WulpusUssConfig):
         rx_configs (list): List of RX configurations. Each RX configuration is a list of RX channel IDs.
     """
     
-    def __init__(self, config: WulpusUssConfig):
+    def __init__(self, config: WulpusUSSConfigGen):
         super().__init__()
         self.__dict__.update(config.__dict__)
         
@@ -83,21 +84,21 @@ class WulpusUssConfigGUI(widgets.VBox, WulpusUssConfig):
             The _ConfigBytes object of the parameter.
         """
 
-        for param in configuration_package[0]:
+        for param in cfg.configuration_package[0]:
             # Check if the parameter is a basic setting
 
             if param.config_name == param_name:
                 # Return the parameter
                 return param
 
-        for param in configuration_package[1]:
+        for param in cfg.configuration_package[1]:
             # Check if the parameter is an advanced setting
 
             if param.config_name == param_name:
                 # Return the parameter
                 return param
 
-        for param in configuration_package[2]:
+        for param in cfg.configuration_package[2]:
             # Check if the parameter is a GUI setting
 
             if param.config_name == param_name:
@@ -166,7 +167,7 @@ class WulpusUssConfigGUI(widgets.VBox, WulpusUssConfig):
         
         value = button['new']
         name = button['owner'].description
-        for param in configuration_package[0]:
+        for param in cfg.configuration_package[0]:
             # Check if the parameter is a basic setting
 
             if param.friendly_name == name:
@@ -174,7 +175,7 @@ class WulpusUssConfigGUI(widgets.VBox, WulpusUssConfig):
                 setattr(self, param.config_name, value)
                 break
 
-        for param in configuration_package[1]:
+        for param in cfg.configuration_package[1]:
             # Check if the parameter is an advanced setting
 
             if param.friendly_name == name:
@@ -182,7 +183,7 @@ class WulpusUssConfigGUI(widgets.VBox, WulpusUssConfig):
                 setattr(self, param.config_name, value)
                 break
 
-        for param in configuration_package[2]:
+        for param in cfg.configuration_package[2]:
             # Check if the parameter is a GUI setting
 
             if param.friendly_name == name:
@@ -209,13 +210,13 @@ class WulpusUssConfigGUI(widgets.VBox, WulpusUssConfig):
         with open(filename, 'w') as f:
             data = {}
             
-            for param in configuration_package[0]:
+            for param in cfg.configuration_package[0]:
                 # save basic settings
                 data[param.config_name] = getattr(self, param.config_name)
-            for param in configuration_package[1]:
+            for param in cfg.configuration_package[1]:
                 # save advanced settings
                 data[param.config_name] = getattr(self, param.config_name)
-            for param in configuration_package[2]:
+            for param in cfg.configuration_package[2]:
                 # save GUI settings
                 data[param.config_name] = getattr(self, param.config_name)
 
@@ -241,7 +242,7 @@ class WulpusUssConfigGUI(widgets.VBox, WulpusUssConfig):
                 # Read the JSON file
                 data = json.load(f)
 
-                for param in configuration_package[0]:
+                for param in cfg.configuration_package[0]:
                     # load basic settings
                     try:
                         value = data[param.config_name]
@@ -278,7 +279,7 @@ class WulpusUssConfigGUI(widgets.VBox, WulpusUssConfig):
                             entry.value = value
                             break
 
-                for param in configuration_package[1]:
+                for param in cfg.configuration_package[1]:
                     # Check if the parameter is an advanced setting
 
                     try:
@@ -294,7 +295,7 @@ class WulpusUssConfigGUI(widgets.VBox, WulpusUssConfig):
                             entry.value = data[param.config_name]
                             break
 
-                for param in configuration_package[2]:
+                for param in cfg.configuration_package[2]:
                     # Check if the parameter is a GUI setting
 
                     try:

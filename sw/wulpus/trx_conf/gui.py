@@ -14,7 +14,7 @@
    SPDX-License-Identifier: Apache-2.0
 """
 
-from wulpus.rx_tx_conf import WulpusRxTxConfigGen, TX_RX_MAX_NUM_OF_CONFIGS, MAX_CH_ID
+from wulpus.trx_conf.gen import WulpusTRXConfigGen, TX_RX_MAX_NUM_OF_CONFIGS, MAX_CH_ID
 import ipywidgets as widgets
 import json
 
@@ -171,7 +171,7 @@ class _ConfigParser():
             self.gui.label_info.value = 'File "' + filename + '" not found.'
 
 # inherit from WulpusRxTxConfigGen
-class WulpusRxTxConfigGenGUI(widgets.VBox):
+class WulpusTRXConfigGUI(widgets.VBox):
     """
     A GUI for managing the TX and RX configurations of Wulpus.
 
@@ -385,7 +385,7 @@ class WulpusRxTxConfigGenGUI(widgets.VBox):
         """
 
         # parse configs using main WulpusRxTxConfigGen class
-        conf_gen = WulpusRxTxConfigGen()
+        conf_gen = WulpusTRXConfigGen()
 
         # add configs and check if at least one config is enabled
         config_found = False
@@ -408,7 +408,7 @@ class WulpusRxTxConfigGenGUI(widgets.VBox):
         """
 
         # parse configs using main WulpusRxTxConfigGen class
-        conf_gen = WulpusRxTxConfigGen()
+        conf_gen = WulpusTRXConfigGen()
 
         # add configs and check if at least one config is enabled
         config_found = False

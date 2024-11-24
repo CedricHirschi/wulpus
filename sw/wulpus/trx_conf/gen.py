@@ -28,7 +28,7 @@ MAX_CH_ID = 7
 RX_MAP = np.array([0, 2, 4, 6, 8, 10, 12, 14])
 TX_MAP = np.array([1, 3, 5, 7, 9, 11, 13, 15])
 
-class WulpusRxTxConfigGen():
+class WulpusTRXConfigGen():
     def __init__(self):
         self.rx_configs = np.zeros(TX_RX_MAX_NUM_OF_CONFIGS, dtype='<u2')
         self.tx_configs = np.zeros(TX_RX_MAX_NUM_OF_CONFIGS, dtype='<u2')

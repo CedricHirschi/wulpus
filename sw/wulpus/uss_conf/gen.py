@@ -16,7 +16,7 @@
 """
 
 import numpy as np
-from wulpus.config_package import *
+import wulpus.config_package as cfg
 
 # CONSTANTS
 
@@ -27,7 +27,7 @@ START_BYTE_RESTART   = 251
 PACKAGE_LEN  = 68
 
 
-class WulpusUssConfig():
+class WulpusUSSConfigGen():
     """
     Represents the configuration of the WULPUS ultrasound subsystem.
 
@@ -61,9 +61,9 @@ class WulpusUssConfig():
                  trans_freq=225e4,
                  pulse_freq=225e4,
                  num_pulses=2,
-                 sampling_freq=USS_CAPTURE_ACQ_RATES[0],
+                 sampling_freq=cfg.USS_CAPTURE_ACQ_RATES[0],
                  num_samples=400,
-                 rx_gain=PGA_GAIN[-10],
+                 rx_gain=cfg.PGA_GAIN[-10],
                  num_txrx_configs= 1,
                  tx_configs = [0], 
                  rx_configs = [0], 
@@ -76,11 +76,11 @@ class WulpusUssConfig():
                  capt_timeout=3000):
         
         # check if sampling frequency is valid
-        if sampling_freq not in USS_CAPTURE_ACQ_RATES:
-            raise ValueError('Sampling frequency of ' + str(sampling_freq) + ' is not allowed.\nAllowed values are: ' + str(USS_CAPTURE_ACQ_RATES))
+        if sampling_freq not in cfg.USS_CAPTURE_ACQ_RATES:
+            raise ValueError('Sampling frequency of ' + str(sampling_freq) + ' is not allowed.\nAllowed values are: ' + str(cfg.USS_CAPTURE_ACQ_RATES))
         # check if rx gain is valid
-        if rx_gain not in PGA_GAIN:
-            raise ValueError('RX gain of ' + str(rx_gain) + ' is not allowed.\nAllowed values are: ' + str(PGA_GAIN))
+        if rx_gain not in cfg.PGA_GAIN:
+            raise ValueError('RX gain of ' + str(rx_gain) + ' is not allowed.\nAllowed values are: ' + str(cfg.PGA_GAIN))
         
         # Parse basic settings
         self.num_acqs           = int(num_acqs)
@@ -114,22 +114,22 @@ class WulpusUssConfig():
 
         # convert to register saveable values
         
-        self.dcdc_turnon_reg        = int(self.dcdc_turnon * us_to_ticks["dcdc_turnon"])
-        self.meas_period_reg        = int(self.meas_period * us_to_ticks["meas_period"])
+        self.dcdc_turnon_reg        = int(self.dcdc_turnon * cfg.us_to_ticks["dcdc_turnon"])
+        self.meas_period_reg        = int(self.meas_period * cfg.us_to_ticks["meas_period"])
         self.trans_freq_reg         = int(self.trans_freq)
         self.pulse_freq_reg         = int(self.pulse_freq)
         self.num_pulses_reg         = int(self.num_pulses)
-        self.sampling_freq_reg      = int(USS_CAPT_OVER_SAMPLE_RATES_REG[USS_CAPTURE_ACQ_RATES.index(self.sampling_freq)])      # converted to oversampling rate, thus name is misleading
+        self.sampling_freq_reg      = int(cfg.USS_CAPT_OVER_SAMPLE_RATES_REG[cfg.USS_CAPTURE_ACQ_RATES.index(self.sampling_freq)])      # converted to oversampling rate, thus name is misleading
         self.num_samples_reg        = int(self.num_samples * 2)
-        self.rx_gain_reg            = int(PGA_GAIN_REG[PGA_GAIN.index(self.rx_gain)])
+        self.rx_gain_reg            = int(cfg.PGA_GAIN_REG[cfg.PGA_GAIN.index(self.rx_gain)])
         self.num_txrx_configs_reg   = int(self.num_txrx_configs)
-        self.start_hvmuxrx_reg      = int(self.start_hvmuxrx * us_to_ticks["start_hvmuxrx"])
-        self.start_ppg_reg          = int(self.start_ppg * us_to_ticks["start_ppg"])
-        self.turnon_adc_reg         = int(self.turnon_adc * us_to_ticks["turnon_adc"])
-        self.start_pgainbias_reg    = int(self.start_pgainbias * us_to_ticks["start_pgainbias"])
-        self.start_adcsampl_reg     = int(self.start_adcsampl * us_to_ticks["start_adcsampl"])
-        self.restart_capt_reg       = int(self.restart_capt * us_to_ticks["restart_capt"])
-        self.capt_timeout_reg       = int(self.capt_timeout * us_to_ticks["capt_timeout"])
+        self.start_hvmuxrx_reg      = int(self.start_hvmuxrx * cfg.us_to_ticks["start_hvmuxrx"])
+        self.start_ppg_reg          = int(self.start_ppg * cfg.us_to_ticks["start_ppg"])
+        self.turnon_adc_reg         = int(self.turnon_adc * cfg.us_to_ticks["turnon_adc"])
+        self.start_pgainbias_reg    = int(self.start_pgainbias * cfg.us_to_ticks["start_pgainbias"])
+        self.start_adcsampl_reg     = int(self.start_adcsampl * cfg.us_to_ticks["start_adcsampl"])
+        self.restart_capt_reg       = int(self.restart_capt * cfg.us_to_ticks["restart_capt"])
+        self.capt_timeout_reg       = int(self.capt_timeout * cfg.us_to_ticks["capt_timeout"])
 
 
     def get_conf_package(self):
@@ -141,7 +141,7 @@ class WulpusUssConfig():
         self.convert_to_registers()
 
         # Write basic settings
-        for param in configuration_package[0]:
+        for param in cfg.configuration_package[0]:
             value = getattr(self, param.config_name + "_reg")
             bytes_arr += param.get_as_bytes(value)
         
@@ -151,7 +151,7 @@ class WulpusUssConfig():
             bytes_arr += self.rx_configs[i].astype('<u2').tobytes()
 
         # Write advanced settings
-        for param in configuration_package[1]:
+        for param in cfg.configuration_package[1]:
             value = getattr(self, param.config_name + "_reg")
             bytes_arr += param.get_as_bytes(value)
 
