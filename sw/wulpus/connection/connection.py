@@ -59,7 +59,7 @@ class WulpusConnection:
         return result
     
     def receive_data(self) -> bytes:
-        future = asyncio.run_coroutine_threadsafe(self.__connection__.receive_data(), self.loop)
+        future = asyncio.run_coroutine_threadsafe(self.__connection__.receive_data(self.acq_length), self.loop)
         return future.result()
 
     def __del__(self):

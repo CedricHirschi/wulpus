@@ -14,6 +14,8 @@
    SPDX-License-Identifier: Apache-2.0
 """
 
+from token import NUMBER
+from matplotlib import use
 import numpy as np
 import asyncio
 from itertools import count, takewhile
@@ -28,6 +30,9 @@ NORDIC_UART_SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
 NORDIC_UART_RX_CHAR_UUID = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
 NORDIC_UART_TX_CHAR_UUID = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
+BYTES_PER_XFER = 201
+NUMBER_OF_XFERS = 4
+MEAS_START_OF_FRAME_MASK = 0xFF
 
 
 def sliced(data: bytes, n: int) -> Iterator[bytes]:
@@ -44,13 +49,48 @@ class WulpusDirect:
 
 
     def __init__(self):
-        
+
         self.device = None
         self.client = None
 
         self.nus = None
         self.rx_char = None
 
+        self.frame_buffer = bytearray() # Hold 804 bytes (1 frame) of data
+        self.frame_ready = asyncio.Event() # Event to signal that a frame is ready
+
+        self.count_packets = 0 # Count the number of packets received (4 packets per frame)
+
+    def __notification_handler(self, sender, data):
+        # Check if it is the first (of the four) BLE packets
+        if data[0] == MEAS_START_OF_FRAME_MASK and len(data) == 202:
+            # print('F', end=' ')
+            self.count_packets = 1
+
+            self.frame_buffer = bytearray()
+            self.frame_buffer.extend(data[1:])
+
+        elif 0 < self.count_packets < NUMBER_OF_XFERS and self.count_packets:
+            self.count_packets += 1
+            # print(self.count_packets, end=' ')
+            
+            self.frame_buffer.extend(data)
+
+            if self.count_packets == NUMBER_OF_XFERS:
+                # print('S', end=' ')
+                self.frame_ready.set()
+                self.count_packets = 0
+
+        else:
+            # Not a valid frame, pass
+            pass
+
+        # self.data_accumulator.extend(data)
+        # # Check if we have received the expected amount of data
+        # print('Data received:', data)
+        # if self.data_accumulator.endswith(b'START\n'):
+        # if b'START\n' in self.data_accumulator:
+        #     self.data_received_event.set()
 
     async def get_available(self):
         """
@@ -65,11 +105,6 @@ class WulpusDirect:
             
         return devices
 
-
-    # def __rx_handler(self, gatt_char: ble_char.BleakGATTCharacteristic, data: bytearray):
-    #     print('Received data: ', data)
-
-
     async def open(self, device:ble_device.BLEDevice):
         """
         Open the device connection.
@@ -83,12 +118,12 @@ class WulpusDirect:
             print('Error connecting:', e)
             return False
         
-        # try:
-        #     await self.client.start_notify(NORDIC_UART_TX_CHAR_UUID, self.__rx_handler)
-        # except Exception as e:
-        #     print('Error starting TX notifications:', e)
-        #     await self.close()
-        #     return False
+        try:
+            await self.client.start_notify(NORDIC_UART_TX_CHAR_UUID, self.__notification_handler)
+        except Exception as e:
+            print('Error starting TX notifications:', e)
+            await self.close()
+            return False
         
         self.nus = self.client.services.get_service(NORDIC_UART_SERVICE_UUID)
         if self.nus is None:
@@ -139,10 +174,17 @@ class WulpusDirect:
         """
         if self.client is None or not self.client.is_connected:
             return False
+        
+        # Clear the data accumulator
+        self.frame = bytearray()
+        self.frame_ready.clear()
 
         try:
-            for s in sliced(conf_bytes_pack, self.rx_char.max_write_without_response_size):
-                await self.client.write_gatt_char(self.rx_char, s, response=False)
+            await self.client.write_gatt_char(self.rx_char, conf_bytes_pack, response=False)
+            # print('Sending config of size', len(conf_bytes_pack), 'with an MTU of', self.rx_char.max_write_without_response_size)
+            # for s in sliced(conf_bytes_pack, self.rx_char.max_write_without_response_size):
+            #     print('  Sending', len(s), 'bytes')
+            #     await self.client.write_gatt_char(self.rx_char, s, response=False)
             return True
         except Exception as e:
             print('Error sending config:', e)
@@ -150,45 +192,38 @@ class WulpusDirect:
     
 
     def __get_rf_data_and_info__(self, bytes_arr:bytes):
-    
-        rf_arr = np.frombuffer(bytes_arr[7:], dtype='<i2')    
-        tx_rx_id = bytes_arr[4]
-        acq_nr = np.frombuffer(bytes_arr[5:7], dtype='<u2')[0]
+        
+        # remove stray byte from bytes_arr
+        bytes_arr = bytes_arr[:105] + bytes_arr[106:]
+
+        print(len(bytes_arr), len(bytes_arr[3:]))
+
+        tx_rx_id = bytes_arr[0]
+        print(tx_rx_id, end=' ')
+        acq_nr = np.frombuffer(bytes_arr[1:3], dtype='<u2')[0]
+        print(acq_nr, end=' ')
+        
+        rf_arr = np.frombuffer(bytes_arr[3:], dtype='<i2')
+        print(np.mean(rf_arr))
 
         return rf_arr, acq_nr, tx_rx_id
     
     
-    async def receive_data(self):
+    async def receive_data(self, acq_length:int):
         if self.client is None or not self.client.is_connected:
             return None
 
-        data_accumulator = bytearray()
-        data_received_event = asyncio.Event()
-
-        def notification_handler(sender, data):
-            data_accumulator.extend(data)
-            # Check if we have received the expected amount of data
-            if data_accumulator.endswith(b'START\n'):
-                data_received_event.set()
-
         try:
-            await self.client.start_notify(NORDIC_UART_TX_CHAR_UUID, notification_handler)
-            await data_received_event.wait()
-            await self.client.stop_notify(NORDIC_UART_TX_CHAR_UUID)
+            # Wait for the frame to be ready
+            # print('W', end=' ')
+            await self.frame_ready.wait()
+            self.frame_ready.clear()
+            # print('R', end=' ')
 
-            if len(data_accumulator) == 0:
-                return None
-            elif data_accumulator[-6:] == b'START\n':
-                # Now process the accumulated data
-                # Assuming you know how much data to expect after 'START\n'
-                expected_data_length = self.acq_length * 2 + 7
-                while len(data_accumulator) < expected_data_length:
-                    # Wait for more data (you may need to adjust your logic here)
-                    await asyncio.sleep(0.1)
-                response = data_accumulator[-expected_data_length:]
-                return self.__get_rf_data_and_info__(response)
-            else:
-                return None
+            response = self.frame_buffer
+
+            return self.__get_rf_data_and_info__(response)
+
         except Exception as e:
             print('Error receiving:', e)
             return None

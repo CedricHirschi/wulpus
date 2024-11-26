@@ -56,7 +56,7 @@ class WulpusDongle:
         self.__ser__.writeTimeout = timeout_write   # timeout for write
 
 
-    def get_available(self):
+    async def get_available(self):
         """
         Get a list of available devices.
         """
@@ -69,7 +69,7 @@ class WulpusDongle:
         return sorted(ports)
 
 
-    def open(self, device:ListPortInfo = None):
+    async def open(self, device:ListPortInfo = None):
         """
         Open the device connection.
         """
@@ -93,7 +93,7 @@ class WulpusDongle:
         return True
     
 
-    def close(self):
+    async def close(self):
         """
         Close the device connection.
         """
@@ -110,7 +110,7 @@ class WulpusDongle:
         return True
     
     
-    def send_config(self, conf_bytes_pack:bytes):
+    async def send_config(self, conf_bytes_pack:bytes):
         """
         Send a configuration package to the device.
         """
@@ -129,15 +129,17 @@ class WulpusDongle:
     
 
     def __get_rf_data_and_info__(self, bytes_arr:bytes):
-    
-        rf_arr = np.frombuffer(bytes_arr[7:], dtype='<i2')    
+
+        print(len(bytes_arr), len(bytes_arr[7:]))
+
         tx_rx_id = bytes_arr[4]
         acq_nr = np.frombuffer(bytes_arr[5:7], dtype='<u2')[0]
+        rf_arr = np.frombuffer(bytes_arr[7:], dtype='<i2')
 
         return rf_arr, acq_nr, tx_rx_id
     
     
-    def receive_data(self):
+    async def receive_data(self, acq_length:int):
         """
         Receive a data package from the device.
         """
@@ -151,7 +153,7 @@ class WulpusDongle:
         if len(response_start) == 0:
             return None
         elif response_start[-6:] == b'START\n':
-            response = self.__ser__.read(self.acq_length*2 + 7)
+            response = self.__ser__.read(acq_length*2 + 7)
             return self.__get_rf_data_and_info__(response)
         else:
             return None
