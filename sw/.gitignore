@@ -10,11 +10,3 @@
 .venv/
 */__pycache__/
 */.ipynb_checkpoints/
-*/.pytest_cache/
-*/.mypy_cache/
-*/.vscode/
-*/.vs/
-*/.idea/
-*/.mypy_cache/
-*/.pytest_cache/
-*/.coverage
