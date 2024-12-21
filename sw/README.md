@@ -1,9 +1,23 @@
-# WULPUS GUI source files
-This directory contains the source files for WULPUS Graphical User Interface (`sw/wulpus`) and an example Jupyter notebook (`sw/wulpus_gui.ipynb`).
+# WULPUS Python source files
 
-# How to get started?
+This directory contains the source files for the WULPUS Python API in [`wulpus`](wulpus) and an example Jupyter notebook in [`wulpus_gui.ipynb`](wulpus_gui.ipynb).
 
-Follow `sw/how_to_install_dependencies.md` to install Python dependencies and launch an example Jupyter notebook.
+## How to install dependencies
 
-# License
-The source files are released under Apache v2.0 (`Apache-2.0`) license unless noted otherwise, please refer to the `sw/LICENSE` file for details.
+1. Install the [`uv`](https://docs.astral.sh/uv/) Python package and project manager
+2. In the `sw` folder, open a terminal and run the following command to install the Python requirements:
+    ```bash
+    uv add pyproject.toml
+    ```
+3. Finally, run the following command to start the Jupyter Notebook:
+    ```bash
+    uv run jupyter notebook
+    ```
+
+### What is `uv`?
+
+`uv` is a Python package and project manager that simplifies the process of installing and managing dependencies. It uses a `pyproject.toml` file to define the project's dependencies and settings. You can learn more about `uv` by visiting the [official documentation](https://docs.astral.sh/uv/).
+
+## License
+
+The source files are released under Apache v2.0 (`Apache-2.0`) license unless noted otherwise, please refer to [`LICENSE`](LICENSE) file for details.

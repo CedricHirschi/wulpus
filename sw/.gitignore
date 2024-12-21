@@ -5,3 +5,16 @@
 # .json are user config files and should not be tracked, except for the configs in examples
 *.json
 !examples/*.json
+
+.ruff_cache/
+.venv/
+*/__pycache__/
+*/.ipynb_checkpoints/
+*/.pytest_cache/
+*/.mypy_cache/
+*/.vscode/
+*/.vs/
+*/.idea/
+*/.mypy_cache/
+*/.pytest_cache/
+*/.coverage

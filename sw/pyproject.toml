@@ -1,0 +1,15 @@
+[project]
+name = "wulpus-sw"
+version = "0.1.0"
+description = "The software used for the WULPUS probe"
+requires-python = "==3.9.20"
+dependencies = [
+  "numpy==1.23.5",
+  "scipy==1.9.3",
+  "ipympl==0.9.2",
+  "matplotlib==3.5.2",
+  "jupyter==1.0.0",
+  "pyserial==3.5",
+  "bleak>=0.22.3",
+  "pyproject-toml>=0.1.0",
+]
