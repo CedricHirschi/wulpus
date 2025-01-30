@@ -1,4 +1,4 @@
-*/*.emSession
-*/*.jlink
-*/Output/
-*/_build/
+*.emSession
+*.jlink
+Output/
+_build/

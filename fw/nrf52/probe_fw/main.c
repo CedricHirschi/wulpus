@@ -87,12 +87,15 @@ void ble_conn_handler(bool connected)
 {
   NRF_LOG_DEBUG("BLE connection status changed to %d", connected);
 
-  // TODO: Stop transfers here? Send config package to MSP430?
   if (!connected)
   {
     // Stop any running transfers
     wp_ppi_stop_transfer();
     wp_spi_stop_reception();
+
+    // Send restart packet to MSP430
+    const uint8_t restart_packet[WULPUS_BYTES_PER_PACKET] = WULPUS_RESTART_PACKET;
+    wp_spi_send_config(restart_packet, WULPUS_BYTES_PER_PACKET);
   }
 }
 
