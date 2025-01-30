@@ -4,6 +4,7 @@
 #include "nrfx_ppi.h"
 
 #include "wulpus_config.h"
+#include "wulpus_spi.h"
 
 #define NRF_LOG_MODULE_NAME wp_ppi
 #define NRF_LOG_LEVEL       4
@@ -39,6 +40,7 @@ void _wp_ppi_tim_counter_handler(nrf_timer_event_t event_type, void *p_context)
 {
   // Stop timers and thus SPI transfers
   wp_ppi_stop_transfer();
+  wp_spi_stop_reception();
 
   NRF_LOG_DEBUG("Counter handler called: %u callbacks", _wp_ppi_end_handlers_num);
 

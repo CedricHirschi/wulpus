@@ -13,8 +13,8 @@
 #define WULPUS_BLE_ADV_DURATION       18000                 /**< The advertising duration (180 seconds) in units of 10 milliseconds. */
 #define WULPUS_BLE_MIN_CONN_INTERVAL  20                    /**< Minimum acceptable connection interval (20 ms), Connection interval uses 1.25 ms units. */
 #define WULPUS_BLE_MAX_CONN_INTERVAL  75                    /**< Maximum acceptable connection interval (75 ms), Connection interval uses 1.25 ms units. */
-#define WULPUS_BLE_MAX_DATA_HANDLERS  5                     /**< Maximum amount of data handlers. */
-#define WULPUS_BLE_MAX_CONN_HANDLERS  5                     /**< Maximum amount of connection handlers. */
+#define WULPUS_BLE_MAX_DATA_HANDLERS  2                     /**< Maximum amount of data handlers. */
+#define WULPUS_BLE_MAX_CONN_HANDLERS  2                     /**< Maximum amount of connection handlers. */
 
 
 //     ____ ____ ___ ___  
@@ -23,12 +23,12 @@
 //   | |_| |  __/| | |_| |
 //    \____|_|  |___\___/ 
 //                        
-#define WULPUS_GPIO_NUM_LED           17 /**< GPIO number of the on-board LED. */
-#define WULPUS_GPIO_NUM_BLE_CONN      18 /**< GPIO number of the BLE connected output. */
-#define WULPUS_GPIO_NUM_DATA_READY    13 /**< GPIO number of the data ready input. */
-#define WULPUS_GPIO_MAX_DATA_HANDLERS 5  /**< Maximum amount of data ready handlers. */
+#define WULPUS_GPIO_NUM_LED           23 /**< GPIO number of the on-board LED. */
+#define WULPUS_GPIO_NUM_BLE_CONN      25 /**< GPIO number of the BLE connected output. */
+#define WULPUS_GPIO_NUM_DATA_READY    29 /**< GPIO number of the data ready input. */
+#define WULPUS_GPIO_MAX_DATA_HANDLERS 2  /**< Maximum amount of data ready handlers. */
 #define WULPUS_GPIO_LED_ENABLE        1  /**< If LED is enabled. */
-#define WULPUS_GPIO_LED_INVERT        1  /**< If LED is inverted (nRF52DK): 1, 0 (WULPUS) else. */
+#define WULPUS_GPIO_LED_INVERT        0  /**< If LED is inverted (nRF52DK): 1, 0 (WULPUS) else. */
 
 
 //    ____  ____ ___ 
@@ -50,7 +50,7 @@
 //   |  __/|  __/| | 
 //   |_|   |_|  |___|
 //                   
-#define WULPUS_PPI_MAX_END_HANDLERS 5
+#define WULPUS_PPI_MAX_END_HANDLERS 2
 
 //    __  __    _    ___ _   _ 
 //   |  \/  |  / \  |_ _| \ | |
@@ -60,6 +60,6 @@
 //                             
 #define WULPUS_NUMBER_OF_XFERS      4
 #define WULPUS_BYTES_PER_XFER       201
-#define WULPUS_NUM_BUFFERED_FRAMES  35
+#define WULPUS_NUM_BUFFERED_FRAMES  5
 
 #endif // __WULPUS_CONFIG__

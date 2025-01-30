@@ -1,7 +1,5 @@
 #include "wulpus_gpio.h"
 
-#include "nrfx_gpiote.h"
-
 #include "wulpus_config.h"
 
 #define NRF_LOG_MODULE_NAME wp_gpio
@@ -22,7 +20,7 @@ void _wp_gpio_data_ready_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t ac
 
   for (size_t i = 0; i < _wp_gpio_data_handlers_num; i++)
   {
-    _wp_gpio_data_handlers[i]();
+    _wp_gpio_data_handlers[i](pin, action);
   }
 }
 
@@ -47,7 +45,7 @@ ret_code_t wp_gpio_init(void)
   NRF_LOG_DEBUG("Initialized BLE connected output");
 
   // Initialize the data ready input
-  nrfx_gpiote_in_config_t in_config_data_ready = NRFX_GPIOTE_CONFIG_IN_SENSE_LOTOHI(true);
+  nrfx_gpiote_in_config_t in_config_data_ready = NRFX_GPIOTE_CONFIG_IN_SENSE_TOGGLE(true);
   in_config_data_ready.pull = NRF_GPIO_PIN_NOPULL;
   WP_ERR_RET(nrfx_gpiote_in_init(WULPUS_GPIO_NUM_DATA_READY, &in_config_data_ready, _wp_gpio_data_ready_handler));
   nrfx_gpiote_in_event_enable(WULPUS_GPIO_NUM_DATA_READY, true);

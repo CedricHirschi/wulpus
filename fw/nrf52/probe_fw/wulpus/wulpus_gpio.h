@@ -3,7 +3,9 @@
 
 #include "wulpus_common.h"
 
-typedef void (*wp_gpio_data_handler_t)(void);
+#include "nrfx_gpiote.h"
+
+typedef void (*wp_gpio_data_handler_t)(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action);
 
 ret_code_t wp_gpio_init(void);
 

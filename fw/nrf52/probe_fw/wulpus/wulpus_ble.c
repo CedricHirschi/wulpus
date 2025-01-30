@@ -60,7 +60,7 @@ static void _wp_ble_nus_handler(ble_nus_evt_t *p_evt)
     if (p_evt->type == BLE_NUS_EVT_RX_DATA)
     {
         NRF_LOG_INFO("Received %u bytes from NUS", p_evt->params.rx_data.length);
-        NRF_LOG_HEXDUMP_INFO(p_evt->params.rx_data.p_data, p_evt->params.rx_data.length);
+        // NRF_LOG_HEXDUMP_INFO(p_evt->params.rx_data.p_data, p_evt->params.rx_data.length);
 
         for (size_t i = 0; i < _wp_ble_data_handlers_num; i++)
         {
@@ -336,6 +336,7 @@ ret_code_t wp_ble_advertising_stop(void)
 
 ret_code_t wp_ble_transmit(uint8_t *data, uint16_t length)
 {
+  NRF_LOG_DEBUG("Sending %u bytes", length);
   ret_code_t err_code;
   do
   {
@@ -346,6 +347,7 @@ ret_code_t wp_ble_transmit(uint8_t *data, uint16_t length)
     }
 
   } while (err_code == NRF_ERROR_RESOURCES);
+  // NRF_LOG_INFO("Sent %u bytes via BLE", length);
 
   return err_code;
 }
