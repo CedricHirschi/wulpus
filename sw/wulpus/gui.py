@@ -438,14 +438,14 @@ class WulpusGuiSingleCh(widgets.VBox):
 
         # Colors for dark mode (brighter, more saturated)
         dark_colors = {
-            "raw": imgui.ImVec4(0.3, 0.7, 1.0, 1.0),      # Bright cyan-blue
+            "raw": imgui.ImVec4(0.3, 0.7, 1.0, 1.0),  # Bright cyan-blue
             "filtered": imgui.ImVec4(1.0, 0.6, 0.1, 1.0),  # Bright orange
             "envelope": imgui.ImVec4(0.3, 1.0, 0.4, 1.0),  # Bright green
         }
 
         # Colors for light mode (deeper, more contrast)
         light_colors = {
-            "raw": imgui.ImVec4(0.0, 0.4, 0.8, 1.0),      # Deep blue
+            "raw": imgui.ImVec4(0.0, 0.4, 0.8, 1.0),  # Deep blue
             "filtered": imgui.ImVec4(0.9, 0.3, 0.0, 1.0),  # Deep orange
             "envelope": imgui.ImVec4(0.0, 0.6, 0.2, 1.0),  # Deep green
         }
