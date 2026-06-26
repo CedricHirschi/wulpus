@@ -12,25 +12,27 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration:
+          - Debug
+          - Release
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v5
 
-    - name: Build with CCS
-      uses: orace/ccsbuild@v0.5
-      with:
-        product_family: msp430fr5043
-        project_path: fw/msp430/wulpus_msp430_firmware
-        configurations: Debug;Release
+      - name: Build with CCS
+        uses: uoohyo/action-ccstudio-ide@v20.5.1.00012
+        with:
+          project-path: fw/msp430/wulpus_msp430_firmware
+          project-name: wulpus_msp430_firmware
+          build-config: ${{ matrix.configuration }}
+          components: PF_MSP430
 
-    - name: Upload release firmware artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: firmware_release
-        path: fw/msp430/wulpus_msp430_firmware/Release/firmware.out
-
-    - name: Upload debug firmware artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: firmware_debug
-        path: fw/msp430/wulpus_msp430_firmware/Debug/firmware.out
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware_${{ matrix.configuration }}
+          path: fw/msp430/wulpus_msp430_firmware/${{ matrix.configuration }}/firmware.out
