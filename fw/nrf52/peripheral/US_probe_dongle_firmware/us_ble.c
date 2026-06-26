@@ -81,7 +81,9 @@ NRF_BLE_GQ_DEF(m_ble_gatt_queue,                                        /**< BLE
 // BLE DEFINES START
 #define APP_BLE_CONN_CFG_TAG            1                                           /**< A tag identifying the SoftDevice BLE configuration. */
 #define DEVICE_NAME                     "US_DONGLE"                                 /**< Name of device. Will be included in the advertising data. */
-#define DEVICE_NAME_TO_CONNECT          "WULPUS_PROBE_3"                            /**< Name of device to get connected to. */
+#ifndef DEVICE_NAME_TO_CONNECT
+#define DEVICE_NAME_TO_CONNECT          "WULPUS_PROBE_0"                            /**< Name of device to get connected to. */
+#endif
 #define NUS_SERVICE_UUID_TYPE           BLE_UUID_TYPE_VENDOR_BEGIN                  /**< UUID type for the Nordic UART Service (vendor specific). */
 #define APP_BLE_OBSERVER_PRIO           3                                           /**< Application's BLE observer priority. You shouldn't need to modify this value. */
 #define MIN_CONN_INTERVAL               MSEC_TO_UNITS(7.5, UNIT_1_25_MS)             /**< Minimum acceptable connection interval (20 ms). Connection interval uses 1.25 ms units. */
