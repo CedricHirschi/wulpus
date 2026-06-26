@@ -1,0 +1,58 @@
+name: Build nRF52 Probe Firmware
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/build-nrf52-probe.yml
+      - fw/nrf52/ble_peripheral/**
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/build-nrf52-probe.yml
+      - fw/nrf52/ble_peripheral/**
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  NRF5_SDK_ARCHIVE: nRF5_SDK_17.1.0_ddde560
+  NRF5_SDK_URL: https://developer.nordicsemi.com/nRF5_SDK/nRF5_SDK_v17.x.x/nRF5_SDK_17.1.0_ddde560.zip
+  PROJECT_RELATIVE_PATH: examples/ble_peripheral/US_probe_nRF52_firmware
+  BUILD_DIR: examples/ble_peripheral/US_probe_nRF52_firmware/pca10040/s132/armgcc
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install ARM GCC toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi make unzip
+
+      - name: Download nRF5 SDK
+        run: |
+          curl -fsSL "$NRF5_SDK_URL" -o "$RUNNER_TEMP/$NRF5_SDK_ARCHIVE.zip"
+          unzip -q "$RUNNER_TEMP/$NRF5_SDK_ARCHIVE.zip" -d "$RUNNER_TEMP"
+
+      - name: Copy project into SDK
+        run: |
+          mkdir -p "$RUNNER_TEMP/$NRF5_SDK_ARCHIVE/examples/ble_peripheral"
+          cp -a fw/nrf52/ble_peripheral/US_probe_nRF52_firmware \
+            "$RUNNER_TEMP/$NRF5_SDK_ARCHIVE/$PROJECT_RELATIVE_PATH"
+
+      - name: Build probe firmware
+        working-directory: ${{ runner.temp }}/${{ env.NRF5_SDK_ARCHIVE }}/${{ env.BUILD_DIR }}
+        run: |
+          make -j"$(nproc)" GNU_INSTALL_ROOT=/usr/bin/ GNU_PREFIX=arm-none-eabi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nrf52_probe_firmware
+          path: ${{ runner.temp }}/${{ env.NRF5_SDK_ARCHIVE }}/${{ env.BUILD_DIR }}/_build/nrf52832_xxaa.hex
