@@ -238,4 +238,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "$GITHUB_REF_NAME" "wulpus-firmware-${GITHUB_REF_NAME}.zip" --clobber
+          gh release upload "$GITHUB_REF_NAME" "wulpus-firmware-${GITHUB_REF_NAME}.zip" --repo "$GITHUB_REPOSITORY" --clobber
