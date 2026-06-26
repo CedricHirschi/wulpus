@@ -13,8 +13,11 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   CCS_VERSION: 20.5.1.00012
   CCS_IMAGE: ghcr.io/cedrichirschi/wulpus/ccstudio-msp430:20.5.1.00012
-  NRF5_SDK_IMAGE: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-newlib
+  NRF5_SDK_IMAGE: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-dfu
   NRF5_SDK_ROOT: /opt/nrf5-sdk
+  DFU_APPLICATION_VERSION: 1
+  DFU_HW_VERSION: 52
+  DFU_SD_REQ: "0x00"
 
 jobs:
   ensure-ccstudio-image:
@@ -124,7 +127,7 @@ jobs:
           - WULPUS_PROBE_8
           - WULPUS_PROBE_9
     container:
-      image: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-newlib
+      image: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-dfu
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -170,7 +173,7 @@ jobs:
           - WULPUS_PROBE_8
           - WULPUS_PROBE_9
     container:
-      image: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-newlib
+      image: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-dfu
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -193,10 +196,22 @@ jobs:
         run: |
           make -j"$(nproc)" GNU_INSTALL_ROOT=/usr/bin/ GNU_PREFIX=arm-none-eabi BLE_PROBE_NAME=${{ matrix.probe_name }}
 
+      - name: Create dongle DFU package
+        working-directory: ${{ env.NRF5_SDK_ROOT }}/${{ env.BUILD_DIR }}
+        run: |
+          nrfutil pkg generate \
+            --hw-version "$DFU_HW_VERSION" \
+            --sd-req "$DFU_SD_REQ" \
+            --application-version "$DFU_APPLICATION_VERSION" \
+            --application _build/nrf52840_xxaa.hex \
+            _build/dfu_package.zip
+
       - uses: actions/upload-artifact@v4
         with:
           name: nrf52_dongle_firmware_${{ matrix.probe_name }}
-          path: ${{ env.NRF5_SDK_ROOT }}/${{ env.BUILD_DIR }}/_build/nrf52840_xxaa.hex
+          path: |
+            ${{ env.NRF5_SDK_ROOT }}/${{ env.BUILD_DIR }}/_build/nrf52840_xxaa.hex
+            ${{ env.NRF5_SDK_ROOT }}/${{ env.BUILD_DIR }}/_build/dfu_package.zip
 
   bundle-release:
     runs-on: ubuntu-latest
@@ -216,7 +231,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y zip
 
-          mkdir -p bundle/msp430 bundle/nrf52/probe bundle/nrf52/dongle
+          mkdir -p bundle/msp430 bundle/nrf52/probe bundle/nrf52/dongle/hex bundle/nrf52/dongle/dfu
 
           cp artifacts/msp430_debug/wulpus_msp430_firmware.out \
             bundle/msp430/wulpus_msp430_firmware_debug.out
@@ -228,7 +243,8 @@ jobs:
 
           for artifact_dir in artifacts/nrf52_dongle_firmware_WULPUS_PROBE_*; do
             probe_name="$(basename "$artifact_dir" | sed 's/^nrf52_dongle_firmware_//')"
-            cp "$artifact_dir/nrf52840_xxaa.hex" "bundle/nrf52/dongle/${probe_name}.hex"
+            cp "$artifact_dir/nrf52840_xxaa.hex" "bundle/nrf52/dongle/hex/${probe_name}.hex"
+            cp "$artifact_dir/dfu_package.zip" "bundle/nrf52/dongle/dfu/${probe_name}.zip"
           done
 
           cd bundle

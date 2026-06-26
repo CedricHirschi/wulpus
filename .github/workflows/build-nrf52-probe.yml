@@ -22,7 +22,7 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  NRF5_SDK_IMAGE: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-newlib
+  NRF5_SDK_IMAGE: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-dfu
   NRF5_SDK_ROOT: /opt/nrf5-sdk
   PROJECT_RELATIVE_PATH: examples/ble_peripheral/US_probe_nRF52_firmware
   BUILD_DIR: examples/ble_peripheral/US_probe_nRF52_firmware/pca10040/s132/armgcc
@@ -74,7 +74,7 @@ jobs:
           - WULPUS_PROBE_8
           - WULPUS_PROBE_9
     container:
-      image: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-newlib
+      image: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-dfu
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}

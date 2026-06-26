@@ -22,8 +22,11 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  NRF5_SDK_IMAGE: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-newlib
+  NRF5_SDK_IMAGE: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-dfu
   NRF5_SDK_ROOT: /opt/nrf5-sdk
+  DFU_APPLICATION_VERSION: 1
+  DFU_HW_VERSION: 52
+  DFU_SD_REQ: "0x00"
   PROJECT_RELATIVE_PATH: examples/peripheral/US_probe_dongle_firmware
   BUILD_DIR: examples/peripheral/US_probe_dongle_firmware/pca10059/s140/armgcc
 
@@ -74,7 +77,7 @@ jobs:
           - WULPUS_PROBE_8
           - WULPUS_PROBE_9
     container:
-      image: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-newlib
+      image: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-dfu
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -94,7 +97,19 @@ jobs:
         run: |
           make -j"$(nproc)" GNU_INSTALL_ROOT=/usr/bin/ GNU_PREFIX=arm-none-eabi BLE_PROBE_NAME=${{ matrix.probe_name }}
 
+      - name: Create dongle DFU package
+        working-directory: ${{ env.NRF5_SDK_ROOT }}/${{ env.BUILD_DIR }}
+        run: |
+          nrfutil pkg generate \
+            --hw-version "$DFU_HW_VERSION" \
+            --sd-req "$DFU_SD_REQ" \
+            --application-version "$DFU_APPLICATION_VERSION" \
+            --application _build/nrf52840_xxaa.hex \
+            _build/dfu_package.zip
+
       - uses: actions/upload-artifact@v4
         with:
           name: nrf52_dongle_firmware_${{ matrix.probe_name }}
-          path: ${{ env.NRF5_SDK_ROOT }}/${{ env.BUILD_DIR }}/_build/nrf52840_xxaa.hex
+          path: |
+            ${{ env.NRF5_SDK_ROOT }}/${{ env.BUILD_DIR }}/_build/nrf52840_xxaa.hex
+            ${{ env.NRF5_SDK_ROOT }}/${{ env.BUILD_DIR }}/_build/dfu_package.zip

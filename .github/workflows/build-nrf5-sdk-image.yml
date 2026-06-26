@@ -13,7 +13,7 @@ permissions:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   NRF5_SDK_ARCHIVE: nRF5_SDK_17.1.0_ddde560
-  NRF5_SDK_IMAGE: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-newlib
+  NRF5_SDK_IMAGE: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-dfu
 
 jobs:
   image:
