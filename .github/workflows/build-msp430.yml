@@ -35,4 +35,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: firmware_${{ matrix.configuration }}
-          path: fw/msp430/wulpus_msp430_firmware/${{ matrix.configuration }}/firmware.out
+          path: fw/msp430/wulpus_msp430_firmware/${{ matrix.configuration }}/wulpus_msp430_firmware.out
