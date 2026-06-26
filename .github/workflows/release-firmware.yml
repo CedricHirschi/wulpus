@@ -1,0 +1,241 @@
+name: Release Firmware Bundle
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  CCS_VERSION: 20.5.1.00012
+  CCS_IMAGE: ghcr.io/cedrichirschi/wulpus/ccstudio-msp430:20.5.1.00012
+  NRF5_SDK_IMAGE: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-newlib
+  NRF5_SDK_ROOT: /opt/nrf5-sdk
+
+jobs:
+  ensure-ccstudio-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: image
+        name: Check CCS image
+        run: |
+          if docker manifest inspect "$CCS_IMAGE" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and push CCS image
+        if: steps.image.outputs.exists != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .github/docker/ccstudio-msp430
+          push: true
+          tags: ${{ env.CCS_IMAGE }}
+          build-args: |
+            CCS_VERSION=${{ env.CCS_VERSION }}
+
+  ensure-nrf5-sdk-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: image
+        name: Check nRF5 SDK image
+        run: |
+          if docker manifest inspect "$NRF5_SDK_IMAGE" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and push nRF5 SDK image
+        if: steps.image.outputs.exists != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .github/docker/nrf5-sdk
+          push: true
+          tags: ${{ env.NRF5_SDK_IMAGE }}
+
+  build-msp430:
+    runs-on: ubuntu-latest
+    needs: ensure-ccstudio-image
+    container:
+      image: ghcr.io/cedrichirschi/wulpus/ccstudio-msp430:20.5.1.00012
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Import project
+        run: |
+          /opt/ti/ccs/eclipse/ccs-server-cli.sh -noSplash -workspace "$GITHUB_WORKSPACE" \
+            -application com.ti.ccs.apps.importProject \
+            -ccs.location "$GITHUB_WORKSPACE/fw/msp430/wulpus_msp430_firmware"
+
+      - name: Build Debug
+        run: |
+          /opt/ti/ccs/eclipse/ccs-server-cli.sh -noSplash -workspace "$GITHUB_WORKSPACE" \
+            -application com.ti.ccs.apps.buildProject \
+            -ccs.projects wulpus_msp430_firmware \
+            -ccs.configuration Debug \
+            -ccs.listErrors
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: msp430_debug
+          path: fw/msp430/wulpus_msp430_firmware/Debug/wulpus_msp430_firmware.out
+
+  build-nrf52-probe:
+    runs-on: ubuntu-latest
+    needs: ensure-nrf5-sdk-image
+    strategy:
+      fail-fast: false
+      matrix:
+        probe_name:
+          - WULPUS_PROBE_0
+          - WULPUS_PROBE_1
+          - WULPUS_PROBE_2
+          - WULPUS_PROBE_3
+          - WULPUS_PROBE_4
+          - WULPUS_PROBE_5
+          - WULPUS_PROBE_6
+          - WULPUS_PROBE_7
+          - WULPUS_PROBE_8
+          - WULPUS_PROBE_9
+    container:
+      image: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-newlib
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      PROJECT_RELATIVE_PATH: examples/ble_peripheral/US_probe_nRF52_firmware
+      BUILD_DIR: examples/ble_peripheral/US_probe_nRF52_firmware/pca10040/s132/armgcc
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Copy project into SDK
+        run: |
+          rm -rf "$NRF5_SDK_ROOT/$PROJECT_RELATIVE_PATH"
+          mkdir -p "$NRF5_SDK_ROOT/examples/ble_peripheral"
+          cp -a fw/nrf52/ble_peripheral/US_probe_nRF52_firmware \
+            "$NRF5_SDK_ROOT/$PROJECT_RELATIVE_PATH"
+
+      - name: Build probe firmware
+        working-directory: ${{ env.NRF5_SDK_ROOT }}/${{ env.BUILD_DIR }}
+        run: |
+          make -j"$(nproc)" GNU_INSTALL_ROOT=/usr/bin/ GNU_PREFIX=arm-none-eabi BLE_PROBE_NAME=${{ matrix.probe_name }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nrf52_probe_firmware_${{ matrix.probe_name }}
+          path: ${{ env.NRF5_SDK_ROOT }}/${{ env.BUILD_DIR }}/_build/nrf52832_xxaa.hex
+
+  build-nrf52-dongle:
+    runs-on: ubuntu-latest
+    needs: ensure-nrf5-sdk-image
+    strategy:
+      fail-fast: false
+      matrix:
+        probe_name:
+          - WULPUS_PROBE_0
+          - WULPUS_PROBE_1
+          - WULPUS_PROBE_2
+          - WULPUS_PROBE_3
+          - WULPUS_PROBE_4
+          - WULPUS_PROBE_5
+          - WULPUS_PROBE_6
+          - WULPUS_PROBE_7
+          - WULPUS_PROBE_8
+          - WULPUS_PROBE_9
+    container:
+      image: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0-newlib
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      PROJECT_RELATIVE_PATH: examples/peripheral/US_probe_dongle_firmware
+      BUILD_DIR: examples/peripheral/US_probe_dongle_firmware/pca10059/s140/armgcc
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Copy project into SDK
+        run: |
+          rm -rf "$NRF5_SDK_ROOT/$PROJECT_RELATIVE_PATH"
+          mkdir -p "$NRF5_SDK_ROOT/examples/peripheral"
+          cp -a fw/nrf52/peripheral/US_probe_dongle_firmware \
+            "$NRF5_SDK_ROOT/$PROJECT_RELATIVE_PATH"
+
+      - name: Build dongle firmware
+        working-directory: ${{ env.NRF5_SDK_ROOT }}/${{ env.BUILD_DIR }}
+        run: |
+          make -j"$(nproc)" GNU_INSTALL_ROOT=/usr/bin/ GNU_PREFIX=arm-none-eabi BLE_PROBE_NAME=${{ matrix.probe_name }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nrf52_dongle_firmware_${{ matrix.probe_name }}
+          path: ${{ env.NRF5_SDK_ROOT }}/${{ env.BUILD_DIR }}/_build/nrf52840_xxaa.hex
+
+  bundle-release:
+    runs-on: ubuntu-latest
+    needs:
+      - build-msp430
+      - build-nrf52-probe
+      - build-nrf52-dongle
+
+    steps:
+      - name: Download firmware artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create firmware bundle
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zip
+
+          mkdir -p bundle/msp430 bundle/nrf52/probe bundle/nrf52/dongle
+
+          cp artifacts/msp430_debug/wulpus_msp430_firmware.out \
+            bundle/msp430/wulpus_msp430_firmware_debug.out
+
+          for artifact_dir in artifacts/nrf52_probe_firmware_WULPUS_PROBE_*; do
+            probe_name="$(basename "$artifact_dir" | sed 's/^nrf52_probe_firmware_//')"
+            cp "$artifact_dir/nrf52832_xxaa.hex" "bundle/nrf52/probe/${probe_name}.hex"
+          done
+
+          for artifact_dir in artifacts/nrf52_dongle_firmware_WULPUS_PROBE_*; do
+            probe_name="$(basename "$artifact_dir" | sed 's/^nrf52_dongle_firmware_//')"
+            cp "$artifact_dir/nrf52840_xxaa.hex" "bundle/nrf52/dongle/${probe_name}.hex"
+          done
+
+          cd bundle
+          zip -r "../wulpus-firmware-${GITHUB_REF_NAME}.zip" .
+
+      - name: Upload firmware bundle to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "$GITHUB_REF_NAME" "wulpus-firmware-${GITHUB_REF_NAME}.zip" --clobber
