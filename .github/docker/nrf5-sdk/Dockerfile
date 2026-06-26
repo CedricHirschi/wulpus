@@ -11,6 +11,7 @@ RUN apt-get update \
       curl \
       gcc-arm-none-eabi \
       git \
+      libnewlib-arm-none-eabi \
       make \
       unzip \
     && curl -fsSL "${NRF5_SDK_URL}" -o /tmp/nrf5-sdk.zip \
