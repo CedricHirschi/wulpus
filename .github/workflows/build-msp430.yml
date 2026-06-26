@@ -1,0 +1,36 @@
+name: Build MSP430 Firmware
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Build with CCS
+      uses: orace/ccsbuild@v0.5
+      with:
+        product_family: msp430fr5043
+        project_path: fw/msp430/wulpus_msp430_firmware
+        configurations: Debug;Release
+
+    - name: Upload release firmware artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: firmware_release
+        path: fw/msp430/wulpus_msp430_firmware/Release/firmware.out
+
+    - name: Upload debug firmware artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: firmware_debug
+        path: fw/msp430/wulpus_msp430_firmware/Debug/firmware.out
