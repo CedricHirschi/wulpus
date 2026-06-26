@@ -4,15 +4,24 @@ on:
   push:
     branches:
       - main
+    paths:
+      - .github/docker/ccstudio-msp430/**
+      - .github/workflows/build-msp430.yml
+      - fw/msp430/wulpus_msp430_firmware/**
   pull_request:
     branches:
       - main
+    paths:
+      - .github/docker/ccstudio-msp430/**
+      - .github/workflows/build-msp430.yml
+      - fw/msp430/wulpus_msp430_firmware/**
 
 permissions:
   contents: read
   packages: write
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   CCS_VERSION: 20.5.1.00012
   CCS_IMAGE: ghcr.io/cedrichirschi/wulpus/ccstudio-msp430:20.5.1.00012
 
