@@ -5,54 +5,82 @@ on:
     branches:
       - main
     paths:
+      - .github/docker/nrf5-sdk/**
       - .github/workflows/build-nrf52-dongle.yml
       - fw/nrf52/peripheral/**
   pull_request:
     branches:
       - main
     paths:
+      - .github/docker/nrf5-sdk/**
       - .github/workflows/build-nrf52-dongle.yml
       - fw/nrf52/peripheral/**
 
 permissions:
   contents: read
+  packages: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  NRF5_SDK_ARCHIVE: nRF5_SDK_17.1.0_ddde560
-  NRF5_SDK_URL: https://developer.nordicsemi.com/nRF5_SDK/nRF5_SDK_v17.x.x/nRF5_SDK_17.1.0_ddde560.zip
+  NRF5_SDK_IMAGE: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0
+  NRF5_SDK_ROOT: /opt/nrf5-sdk
   PROJECT_RELATIVE_PATH: examples/peripheral/US_probe_dongle_firmware
   BUILD_DIR: examples/peripheral/US_probe_dongle_firmware/pca10059/s140/armgcc
 
 jobs:
+  ensure-nrf5-sdk-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: image
+        name: Check nRF5 SDK image
+        run: |
+          if docker manifest inspect "$NRF5_SDK_IMAGE" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and push nRF5 SDK image
+        if: steps.image.outputs.exists != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .github/docker/nrf5-sdk
+          push: true
+          tags: ${{ env.NRF5_SDK_IMAGE }}
+
   build:
     runs-on: ubuntu-latest
+    needs: ensure-nrf5-sdk-image
+    container:
+      image: ghcr.io/cedrichirschi/wulpus/nrf5-sdk:17.1.0
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install ARM GCC toolchain
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-arm-none-eabi make unzip
-
-      - name: Download nRF5 SDK
-        run: |
-          curl -fsSL "$NRF5_SDK_URL" -o "$RUNNER_TEMP/$NRF5_SDK_ARCHIVE.zip"
-          unzip -q "$RUNNER_TEMP/$NRF5_SDK_ARCHIVE.zip" -d "$RUNNER_TEMP"
-
       - name: Copy project into SDK
         run: |
-          mkdir -p "$RUNNER_TEMP/$NRF5_SDK_ARCHIVE/examples/peripheral"
+          rm -rf "$NRF5_SDK_ROOT/$PROJECT_RELATIVE_PATH"
+          mkdir -p "$NRF5_SDK_ROOT/examples/peripheral"
           cp -a fw/nrf52/peripheral/US_probe_dongle_firmware \
-            "$RUNNER_TEMP/$NRF5_SDK_ARCHIVE/$PROJECT_RELATIVE_PATH"
+            "$NRF5_SDK_ROOT/$PROJECT_RELATIVE_PATH"
 
       - name: Build dongle firmware
-        working-directory: ${{ runner.temp }}/${{ env.NRF5_SDK_ARCHIVE }}/${{ env.BUILD_DIR }}
+        working-directory: ${{ env.NRF5_SDK_ROOT }}/${{ env.BUILD_DIR }}
         run: |
           make -j"$(nproc)" GNU_INSTALL_ROOT=/usr/bin/ GNU_PREFIX=arm-none-eabi
 
       - uses: actions/upload-artifact@v4
         with:
           name: nrf52_dongle_firmware
-          path: ${{ runner.temp }}/${{ env.NRF5_SDK_ARCHIVE }}/${{ env.BUILD_DIR }}/_build/nrf52840_xxaa.hex
+          path: ${{ env.NRF5_SDK_ROOT }}/${{ env.BUILD_DIR }}/_build/nrf52840_xxaa.hex
