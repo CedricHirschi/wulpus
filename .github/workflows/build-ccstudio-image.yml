@@ -10,6 +10,10 @@ permissions:
     contents: read
     packages: write
 
+env:
+    CCS_VERSION: 20.5.1.00012
+    CCS_IMAGE: ghcr.io/cedrichirschi/wulpus/ccstudio-msp430:20.5.1.00012
+
 jobs:
     image:
       runs-on: ubuntu-latest
@@ -26,4 +30,6 @@ jobs:
           with:
             context: .github/docker/ccstudio-msp430
             push: true
-            tags: ghcr.io/${{ github.repository }}/ccstudio-msp430:20.5.1.00012
+            tags: ${{ env.CCS_IMAGE }}
+            build-args: |
+              CCS_VERSION=${{ env.CCS_VERSION }}
