@@ -11,10 +11,11 @@
 #define WULPUS_BLE_DEVICE_NAME        "WULPUS_PROBE_19"     /**< Name of device. Will be included in the advertising data. */
 #define WULPUS_BLE_ADV_INTERVAL       64                    /**< The advertising interval (in units of 0.625 ms. This value corresponds to 40 ms). */
 #define WULPUS_BLE_ADV_DURATION       18000                 /**< The advertising duration (180 seconds) in units of 10 milliseconds. */
-#define WULPUS_BLE_MIN_CONN_INTERVAL  20                    /**< Minimum acceptable connection interval (20 ms), Connection interval uses 1.25 ms units. */
-#define WULPUS_BLE_MAX_CONN_INTERVAL  75                    /**< Maximum acceptable connection interval (75 ms), Connection interval uses 1.25 ms units. */
+#define WULPUS_BLE_MIN_CONN_INTERVAL  7.5                   /**< Minimum acceptable connection interval (7.5 ms), Connection interval uses 1.25 ms units. */
+#define WULPUS_BLE_MAX_CONN_INTERVAL  7.5                   /**< Maximum acceptable connection interval (7.5 ms), Connection interval uses 1.25 ms units. */
 #define WULPUS_BLE_MAX_DATA_HANDLERS  2                     /**< Maximum amount of data handlers. */
 #define WULPUS_BLE_MAX_CONN_HANDLERS  2                     /**< Maximum amount of connection handlers. */
+#define WULPUS_BLE_SLAVE_LATENCY      5                     /**< Slave latency. */
 
 
 //     ____ ____ ___ ___  
@@ -60,7 +61,7 @@
 //                             
 #define WULPUS_NUMBER_OF_XFERS      4
 #define WULPUS_BYTES_PER_XFER       201
-#define WULPUS_NUM_BUFFERED_FRAMES  5
+#define WULPUS_NUM_BUFFERED_FRAMES  35
 #define WULPUS_RESTART_PACKET       {0xFB, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 #define WULPUS_BYTES_PER_PACKET     68
 

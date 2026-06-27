@@ -87,6 +87,9 @@ void ble_conn_handler(bool connected)
 {
   NRF_LOG_DEBUG("BLE connection status changed to %d", connected);
 
+  // Connection alone is not sufficient to start the MSP430.
+  wp_gpio_ble_conn_indicate(false);
+
   if (!connected)
   {
     // Stop any running transfers
@@ -116,6 +119,8 @@ void ble_data_handler(uint8_t const *data, uint16_t length)
   // Clear the BLE buffers to send US data with the received configuration
   rx_buffer_head = 0;
   rx_buffer_tail = 0;
+
+  wp_gpio_ble_conn_indicate(true);
 }
 
 // Checks if there are any frames queued to be processed and processes them
@@ -125,7 +130,7 @@ void handle_pending_frames(void)
   {
     NRF_LOG_DEBUG("Processing frame %d", rx_buffer_tail);
 
-    APP_ERROR_CHECK(wp_ble_transmit(rx_buffer + rx_buffer_tail * FRAME_SIZE + 0 * WULPUS_BYTES_PER_XFER + 1, WULPUS_BYTES_PER_XFER + 1));
+    APP_ERROR_CHECK(wp_ble_transmit(rx_buffer + rx_buffer_tail * FRAME_SIZE + 0 * WULPUS_BYTES_PER_XFER, WULPUS_BYTES_PER_XFER + 1));
     APP_ERROR_CHECK(wp_ble_transmit(rx_buffer + rx_buffer_tail * FRAME_SIZE + 1 * WULPUS_BYTES_PER_XFER, WULPUS_BYTES_PER_XFER));
     APP_ERROR_CHECK(wp_ble_transmit(rx_buffer + rx_buffer_tail * FRAME_SIZE + 2 * WULPUS_BYTES_PER_XFER, WULPUS_BYTES_PER_XFER));
     APP_ERROR_CHECK(wp_ble_transmit(rx_buffer + rx_buffer_tail * FRAME_SIZE + 3 * WULPUS_BYTES_PER_XFER, WULPUS_BYTES_PER_XFER));
@@ -161,7 +166,7 @@ int main(void)
   
   // Initialize BLE
   APP_ERROR_CHECK(wp_ble_init());
-  APP_ERROR_CHECK(wp_ble_add_conn_handler(wp_gpio_ble_conn_indicate));
+  // APP_ERROR_CHECK(wp_ble_add_conn_handler(wp_gpio_ble_conn_indicate));
   APP_ERROR_CHECK(wp_ble_add_conn_handler(ble_conn_handler));
   APP_ERROR_CHECK(wp_ble_add_data_handler(ble_data_handler));
 

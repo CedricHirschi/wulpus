@@ -27,12 +27,12 @@ NRF_LOG_MODULE_REGISTER();
 
 #define APP_BLE_OBSERVER_PRIO           3                                                         /**< Application's BLE observer priority. You shouldn't need to modify this value. */
 
-#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(WULPUS_BLE_MIN_CONN_INTERVAL, UNIT_1_25_MS) /**< Minimum acceptable connection interval (20 ms), Connection interval uses 1.25 ms units. */
-#define MAX_CONN_INTERVAL               MSEC_TO_UNITS(WULPUS_BLE_MAX_CONN_INTERVAL, UNIT_1_25_MS) /**< Maximum acceptable connection interval (75 ms), Connection interval uses 1.25 ms units. */
-#define SLAVE_LATENCY                   0                                                         /**< Slave latency. */
+#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(WULPUS_BLE_MIN_CONN_INTERVAL, UNIT_1_25_MS) /**< Minimum acceptable connection interval (7.5 ms), Connection interval uses 1.25 ms units. */
+#define MAX_CONN_INTERVAL               MSEC_TO_UNITS(WULPUS_BLE_MAX_CONN_INTERVAL, UNIT_1_25_MS) /**< Maximum acceptable connection interval (7.5 ms), Connection interval uses 1.25 ms units. */
+#define SLAVE_LATENCY                   WULPUS_BLE_SLAVE_LATENCY                                  /**< Slave latency. */
 #define CONN_SUP_TIMEOUT                MSEC_TO_UNITS(4000, UNIT_10_MS)                           /**< Connection supervisory timeout (4 seconds), Supervision Timeout uses 10 ms units. */
-#define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(5000)                                     /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
-#define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000)                                    /**< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds). */
+#define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(400)                                      /**< Time from initiating event to the first connection parameter update (400 ms). */
+#define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(600)                                      /**< Time between subsequent connection parameter updates (600 ms). */
 #define MAX_CONN_PARAMS_UPDATE_COUNT    3                                                         /**< Number of attempts before giving up the connection parameter negotiation. */
 
 
@@ -105,6 +105,13 @@ static void _wp_ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             NRF_LOG_INFO("Connected");
             m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
             APP_ERROR_CHECK(nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle));
+
+            ble_gap_phys_t const phys =
+            {
+                .rx_phys = BLE_GAP_PHY_2MBPS,
+                .tx_phys = BLE_GAP_PHY_2MBPS,
+            };
+            APP_ERROR_CHECK(sd_ble_gap_phy_update(m_conn_handle, &phys));
 
             for (size_t i = 0; i < _wp_ble_conn_handlers_num; i++)
             {
@@ -348,6 +355,11 @@ ret_code_t wp_ble_transmit(uint8_t *data, uint16_t length)
 
   } while (err_code == NRF_ERROR_RESOURCES);
   // NRF_LOG_INFO("Sent %u bytes via BLE", length);
+
+  if ((err_code == NRF_ERROR_INVALID_STATE) ||
+      (err_code == NRF_ERROR_NOT_FOUND)) {
+    return NRF_SUCCESS; // Packet was dropped, but this is not fatal.
+  }
 
   return err_code;
 }

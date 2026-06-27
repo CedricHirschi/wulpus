@@ -65,7 +65,7 @@ const nrf_drv_spi_t *wp_spi_get_instance(void)
 
 void wp_spi_set_buffer(uint8_t *buffer)
 {
-  spi.u.spim.p_reg->RXD.PTR = (uint32_t)buffer;
+  _wp_spi_rx_buffer = buffer;
 }
 
 ret_code_t wp_spi_send_config(uint8_t const *buffer, uint8_t length)
